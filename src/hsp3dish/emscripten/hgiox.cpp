@@ -19,12 +19,14 @@
 #ifdef HSPWIN
 #define STRICT
 #include <windows.h>
+#define FONT_PADDING 0
 #endif
 
 #ifdef HSPNDK
 #define USE_JAVA_FONT
 #define FONT_TEX_SX 512
 #define FONT_TEX_SY 128
+#define FONT_PADDING 0
 #include "../../appengine.h"
 #include "../../javafunc.h"
 #include "font_data.h"
@@ -37,6 +39,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include "iOSBridge.h"
 #include "hsp3dish/ios/appengine.h"
+#define FONT_PADDING 0
 #endif
 
 
@@ -46,6 +49,7 @@
 #define USE_JAVA_FONT
 #define FONT_TEX_SX 512
 #define FONT_TEX_SY 128
+#define FONT_PADDING 0
 //#include "font_data.h"
 #endif
 
@@ -58,6 +62,7 @@
 #define USE_JAVA_FONT
 #define FONT_TEX_SX 512
 #define FONT_TEX_SY 128
+#define FONT_PADDING 2
 #endif
 
 #if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
@@ -2044,11 +2049,11 @@ int hgio_mes(BMSCR* bm, char* msg)
 		bm->printoffsety = 0;
 	}
 
-	hgio_fontcopy(bm, bm->cx, bm->cy, tex->ratex, tex->ratey, xsize, ysize, tex->_texture, 0, 0);
+	hgio_fontcopy(bm, bm->cx, bm->cy - FONT_PADDING, tex->ratex, tex->ratey, xsize, ysize, tex->_texture, 0, 0);
 
 	if (xsize > bm->printsizex) bm->printsizex = xsize;
-	bm->printsizey += ysize;
-	bm->cy += ysize;
+	bm->printsizey += ysize - FONT_PADDING * 2;
+	bm->cy += ysize - FONT_PADDING * 2;
 	return 0;
 }
 

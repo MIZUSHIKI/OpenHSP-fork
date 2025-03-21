@@ -59,6 +59,7 @@
 #define USE_JAVA_FONT
 #define FONT_TEX_SX 512
 #define FONT_TEX_SY 128
+#define FONT_PADDING 2
 #endif
 
 #if defined(HSPLINUX) || defined(HSPEMSCRIPTEN)
@@ -914,7 +915,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 				}
 			}
 		}, msg, fontSize, & fontsystem_sx, & fontsystem_sy, info ? info->pos : nullptr, fontsystem_fontname.c_str(), fontsystem_style);
-		fontsystem_sy = fontsystem_size;
+		fontsystem_sy = fontsystem_size + FONT_PADDING * 2;
 
 		//Alertf("text %s %d %d\n", msg, fontsystem_sx, fontsystem_sy);
 
@@ -954,7 +955,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 		var imageData = context.getImageData(0, 0, $2, $3);
 		HEAPU8.set(imageData.data, $4);
 
-	}, msg, fontSize, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style, ascent);
+	}, msg, fontSize, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style, ascent + FONT_PADDING);
 
 	//Alertf( "Init:Surface(%d,%d) %d destpitch%d",fontsystem_sx,fontsystem_sy,fontdata_color,pitch );
 	*out_sx = fontsystem_sx;
