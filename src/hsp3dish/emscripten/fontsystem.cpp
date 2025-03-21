@@ -741,13 +741,14 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 
 #if defined(HSPEMSCRIPTEN)
 #ifndef USE_TTFFONT
+#define HSPJS_DEFAULT_FONTNAME "sans-serif"
 static	int fontsystem_flag = 0;
 static	int fontsystem_sx;		// 横のサイズ
 static	int fontsystem_sy;		// 縦のサイズ
 static	unsigned char *fontdata_pix;
 static	int fontdata_size;
 static	int fontdata_color;
-static	std::string fontsystem_fontname = "sans-serif";
+static	std::string fontsystem_fontname = HSPJS_DEFAULT_FONTNAME;
 static	int fontsystem_size;
 static	int fontsystem_style;
 static	int fontsystem_texid;
@@ -776,7 +777,9 @@ void hgio_fontsystem_init(char* fontname, int size, int style)
 	//		フォントレンダリング初期化
 	//
 	hgio_fontsystem_term();
-	fontsystem_fontname = fontname;
+	if (fontname != NULL && *fontname != 0) {
+		fontsystem_fontname = fontname;
+	}
 	fontsystem_flag = 1;
 	fontsystem_size = size;
 	fontsystem_style = style;
