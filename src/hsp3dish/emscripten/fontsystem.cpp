@@ -786,7 +786,7 @@ void hgio_fontsystem_init(char* fontname, int size, int style)
 	fontsystem_style = style;
 }
 
-static std::map<std::string, float> fontsize_map;
+static std::map<std::string, std::pair<float, float>> fontsize_map;
 
 int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_sx, int* out_sy, texmesPos* info)
 {
@@ -810,14 +810,21 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 
 	std::string key =  fontsystem_fontname + "#" + std::to_string(fontsystem_size) + "#" + std::to_string(fontsystem_style);
 	float fontSize = 1.0f;
+	float ascent = 0.0f;
 	if (fontsize_map.find(key) == fontsize_map.end()) {
 		// Calculate font size
 		EM_ASM_({
 			const MEASURE_TEXT = "emjgXあ門_^";
 			const canvas = document.getElementById('hsp3dishFontCanvas');
 			const context = canvas.getContext("2d", { willReadFrequently: true });
-			const fontname = UTF8ToString($1);
+
+			// validate font name
+			const element = document.createElement("span");
+			element.style.fontFamily = UTF8ToString($1);
+			const fontname = element.style.fontFamily;
+
 			const targetSize = $0;
+			const metrics = ([0, 0]);
 
 			function getFontStyle(size) {
 				let fontStyle = "";
@@ -831,7 +838,9 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 				context.font = getFontStyle(size);
 
 				const m = context.measureText(MEASURE_TEXT);
-				return Math.ceil(Math.max(m.fontBoundingBoxAscent, m.actualBoundingBoxAscent) +Math.max(m.fontBoundingBoxDescent, m.actualBoundingBoxDescent));
+				metrics[0] = m.actualBoundingBoxAscent;
+				metrics[1] = m.actualBoundingBoxDescent;
+				return Math.round(metrics[0] + metrics[1] + 1);
 			}
 
 			// binary search for font size
@@ -840,11 +849,11 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 			// console.log("measure", realSize, targetSize, h);
 			if (h != targetSize) {
 				let low = realSize - 1;
-				while (getSize(low) > targetSize) {
+				while (getSize(low) > targetSize && low > targetSize / 2) {
 					low /= 1.5;
 				}
 				let high = realSize + 1;
-				while (getSize(high) < targetSize) {
+				while (getSize(high) < targetSize && high < targetSize * 2) {
 					high *= 1.5;
 				}
 				for (let i = 0; i < 100; i++) {
@@ -863,14 +872,17 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 					} else {
 						low = realSize;
 					}
+					if (high - low < 0.1) break;
 				}
 			}
 
 			HEAPF32[$3 >> 2] = realSize;
-		}, fontsystem_size, fontsystem_fontname.c_str(), fontsystem_style, &fontSize);
-		fontsize_map[key] = fontSize;
+			HEAPF32[$4 >> 2] = metrics[0];
+		}, fontsystem_size, fontsystem_fontname.c_str(), fontsystem_style, &fontSize, &ascent);
+
+		fontsize_map[key] = std::make_pair(fontSize, ascent);
 	} else {
-		fontSize = fontsize_map[key];
+		std::tie(fontSize, ascent) = fontsize_map[key];
 	}
 
 	if (buffer == NULL) {
@@ -889,7 +901,6 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 			let msg = UTF8ToString($0);
 			const metrics = context.measureText(msg);
 			HEAP32[$2 >> 2] = Math.ceil(Math.max(metrics.width, metrics.actualBoundingBoxRight) - Math.min(0, metrics.actualBoundingBoxLeft)) + 1;
-			HEAP32[$3 >> 2] = Math.ceil(metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
 
 			if ($4 !== 0) {
 				const metrics = context.measureText(msg);
@@ -936,14 +947,14 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 		// msg += " " + metrics.alphabeticBaseline + "/" + metrics.ideographicBaseline + "/" + metrics.actualBoundingBoxLeft + "/" + metrics.actualBoundingBoxRight + "/" + metrics.fontBoundingBoxAscent + "/" + metrics.fontBoundingBoxDescent;
 		context.clearRect(0, 0, Math.min(canvas.width, $2 + 1), Math.min(canvas.height, $3 + 1));
 		context.fillStyle = 'rgba(255, 255, 255, 255)';
-		context.fillText(msg, 0, metrics.fontBoundingBoxAscent);
+		context.fillText(msg, 0, $7);
 		//console.log(msg);
 
 		//GLctx.texImage2D(GLctx.TEXTURE_2D, 0, GLctx.RGBA, GLctx.RGBA, GLctx.UNSIGNED_BYTE, context.getImageData(0, 0, $2, $3));
 		var imageData = context.getImageData(0, 0, $2, $3);
 		HEAPU8.set(imageData.data, $4);
 
-	}, msg, fontSize, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style);
+	}, msg, fontSize, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style, ascent);
 
 	//Alertf( "Init:Surface(%d,%d) %d destpitch%d",fontsystem_sx,fontsystem_sy,fontdata_color,pitch );
 	*out_sx = fontsystem_sx;
