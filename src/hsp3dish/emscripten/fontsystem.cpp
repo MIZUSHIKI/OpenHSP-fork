@@ -9,6 +9,7 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <map>
 
 #include "../../hsp3/hsp3config.h"
 
@@ -785,37 +786,77 @@ void hgio_fontsystem_init(char* fontname, int size, int style)
 	fontsystem_style = style;
 }
 
+static std::map<std::string, std::pair<float, float>> fontsize_map;
+
 int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_sx, int* out_sy, texmesPos* info)
 {
 	//		msgの文字列をテクスチャバッファにレンダリングする
 	//		(bufferがNULLの場合はサイズだけを取得する)
 	//
 
+	EM_ASM_({
+		let canvas = document.getElementById('hsp3dishFontCanvas');
+		if (!canvas) {
+			canvas = document.createElement("canvas");
+			canvas.id = 'hsp3dishFontCanvas';
+			canvas.style.setProperty("visibility", "hidden");
+			canvas.style.setProperty("position", "absolute");
+			canvas.style.setProperty("top", "0");
+			canvas.style.setProperty("left", "0");
+			document.body.appendChild(canvas);
+		}
+	});
+
+
+	std::string key =  fontsystem_fontname + "#" + std::to_string(fontsystem_size) + "#" + std::to_string(fontsystem_style);
+	float ascent = 0.0f;
+	float descent = 0.0f;
+	if (fontsize_map.find(key) == fontsize_map.end()) {
+		// Calculate font size
+		EM_ASM_({
+			const MEASURE_TEXT = "emjgXあ門_^";
+			const canvas = document.getElementById('hsp3dishFontCanvas');
+			const context = canvas.getContext("2d", { willReadFrequently: true });
+
+			// validate font name
+			const element = document.createElement("span");
+			element.style.fontFamily = UTF8ToString($1);
+			const fontname = element.style.fontFamily;
+
+			let fontStyle = "";
+			if ($2 & 1) fontStyle += "bold ";
+			if ($2 & 2) fontStyle += "italic ";
+			fontStyle += $0 + "px " + fontname;
+			context.font = fontStyle;
+
+			const m = context.measureText(MEASURE_TEXT);
+
+			HEAPF32[$3 >> 2] = m.actualBoundingBoxAscent;
+			HEAPF32[$4 >> 2] = m.actualBoundingBoxDescent;
+		}, fontsystem_size, fontsystem_fontname.c_str(), fontsystem_style, &ascent, &descent);
+
+		fontsize_map[key] = std::make_pair(ascent, descent);
+	} else {
+		std::tie(ascent, descent) = fontsize_map[key];
+	}
+
 	if (buffer == NULL) {
 		EM_ASM_({
-			let canvas = document.getElementById('hsp3dishFontCanvas');
-			if (!canvas) {
-				canvas = document.createElement("canvas");
-				canvas.id = 'hsp3dishFontCanvas';
-				canvas.style.setProperty("visibility", "hidden");
-				canvas.style.setProperty("position", "absolute");
-				canvas.style.setProperty("top", "0");
-				canvas.style.setProperty("left", "0");
-				document.body.appendChild(canvas);
-			}
-
+			const canvas = document.getElementById('hsp3dishFontCanvas');
 			const context = canvas.getContext("2d", { willReadFrequently: true });
+			const fontname = UTF8ToString($5);
 
 			let fontStyle = "";
 			if ($6 & 1) fontStyle += "bold ";
 			if ($6 & 2) fontStyle += "italic ";
-			fontStyle += $1 + "px " + UTF8ToString($5);
+			fontStyle += $1 + "px " + fontname;
 			context.font = fontStyle;
+			// console.log("measure char", fontStyle);
 
-			const msg = UTF8ToString($0);
+			let msg = UTF8ToString($0);
 			const metrics = context.measureText(msg);
 			HEAP32[$2 >> 2] = Math.ceil(Math.max(metrics.width, metrics.actualBoundingBoxRight) - Math.min(0, metrics.actualBoundingBoxLeft)) + 1;
-			HEAP32[$3 >> 2] = Math.ceil(Math.max(metrics.fontBoundingBoxAscent, metrics.actualBoundingBoxAscent) +Math.max(metrics.fontBoundingBoxDescent, metrics.actualBoundingBoxDescent));
+			HEAP32[$3 >> 2] = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) | 0;
 
 			if ($4 !== 0) {
 				const metrics = context.measureText(msg);
@@ -828,8 +869,12 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 					HEAP16[($4 >> 1) + i + 1] = m.width | 0; //(m.actualBoundingBoxRight - m.actualBoundingBoxLeft) | 0;
 				}
 			}
-			}, msg, fontsystem_size, & fontsystem_sx, & fontsystem_sy, info ? info->pos : nullptr, fontsystem_fontname.c_str(), fontsystem_style);
+		}, msg, fontsystem_size, &fontsystem_sx, &fontsystem_sy, info ? info->pos : nullptr, fontsystem_fontname.c_str(), fontsystem_style);
 
+		int actualBoundingBox_Height = static_cast<int>(std::round(ascent + descent +1));
+		if (fontsystem_sy < actualBoundingBox_Height) {
+			fontsystem_sy = actualBoundingBox_Height;
+		}
 		//Alertf("text %s %d %d\n", msg, fontsystem_sx, fontsystem_sy);
 
 		*out_sx = fontsystem_sx;
@@ -842,19 +887,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 	int sy = Get2N(fontsystem_sy);
 
 	EM_ASM_({
-		var canvas = document.getElementById('hsp3dishFontCanvas');
-		if (!canvas) {
-			//document.body.removeChild(canvas);
-			canvas = document.createElement("canvas");
-			canvas.id = 'hsp3dishFontCanvas';
-			canvas.style.setProperty("visibility", "hidden");
-			canvas.style.setProperty("position", "absolute");
-			canvas.style.setProperty("top", "0");
-			canvas.style.setProperty("left", "0");
-			canvas.width = $2;
-			canvas.height = $3;
-			document.body.appendChild(canvas);
-		}
+		const canvas = document.getElementById('hsp3dishFontCanvas');
 		if (canvas.width < $2)
 			canvas.width = $2;
 		if (canvas.height < $3)
@@ -873,14 +906,14 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 		// msg += " " + metrics.alphabeticBaseline + "/" + metrics.ideographicBaseline + "/" + metrics.actualBoundingBoxLeft + "/" + metrics.actualBoundingBoxRight + "/" + metrics.fontBoundingBoxAscent + "/" + metrics.fontBoundingBoxDescent;
 		context.clearRect(0, 0, Math.min(canvas.width, $2 + 1), Math.min(canvas.height, $3 + 1));
 		context.fillStyle = 'rgba(255, 255, 255, 255)';
-		context.fillText(msg, 0, metrics.fontBoundingBoxAscent);
+		context.fillText(msg, 0, $7);
 		//console.log(msg);
 
 		//GLctx.texImage2D(GLctx.TEXTURE_2D, 0, GLctx.RGBA, GLctx.RGBA, GLctx.UNSIGNED_BYTE, context.getImageData(0, 0, $2, $3));
 		var imageData = context.getImageData(0, 0, $2, $3);
 		HEAPU8.set(imageData.data, $4);
 
-		}, msg, fontsystem_size, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style);
+	}, msg, fontsystem_size, sx, sy, buffer, fontsystem_fontname.c_str(), fontsystem_style, ascent);
 
 	//Alertf( "Init:Surface(%d,%d) %d destpitch%d",fontsystem_sx,fontsystem_sy,fontdata_color,pitch );
 	*out_sx = fontsystem_sx;
