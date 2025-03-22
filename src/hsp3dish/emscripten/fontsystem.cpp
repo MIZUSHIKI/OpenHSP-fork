@@ -814,7 +814,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 	if (fontsize_map.find(key) == fontsize_map.end()) {
 		// Calculate font size
 		EM_ASM_({
-			const MEASURE_TEXT = "emjgXあ門_^";
+			const MEASURE_TEXT = "emjgXあぽ門驚_^";
 			const canvas = document.getElementById('hsp3dishFontCanvas');
 			const context = canvas.getContext("2d", { willReadFrequently: true });
 
