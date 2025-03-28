@@ -2006,6 +2006,13 @@ int hgio_font(char *fontname, int size, int style)
 	return 0;
 }
 
+
+void Posinc( BMSCR *bm, int pp )
+{
+	if ( pp<bm->py ) { bm->cy+=bm->py; } else { bm->cy+=pp; }
+}
+
+
 int hgio_mes(BMSCR* bm, char* msg)
 {
 	//		mes,print 文字表示
@@ -2020,7 +2027,8 @@ int hgio_mes(BMSCR* bm, char* msg)
 	if (*msg == 0) {
 		ysize = tmes._fontsize;
 		bm->printsizey += ysize;
-		bm->cy += ysize;
+		//bm->cy += ysize;
+		Posinc(bm, ysize);
 		return 0;
 	}
 
@@ -2056,13 +2064,15 @@ int hgio_mes(BMSCR* bm, char* msg)
 
 	if (xsize > bm->printsizex) bm->printsizex = xsize;
 	bm->printsizey += ysize;
-	bm->cy += ysize;
+	//bm->cy += ysize;
+	Posinc(bm, ysize);
 #else
 	hgio_fontcopy(bm, bm->cx, bm->cy - fontsize / 2, tex->ratex, tex->ratey, xsize, ysize, tex->_texture, 0, 0);
 
 	if (xsize > bm->printsizex) bm->printsizex = xsize;
 	bm->printsizey += fontsize;
-	bm->cy += fontsize;
+	//bm->cy += fontsize;
+	Posinc(bm, fontsize);
 #endif
 	return 0;
 }

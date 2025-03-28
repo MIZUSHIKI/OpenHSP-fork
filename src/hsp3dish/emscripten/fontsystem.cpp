@@ -801,6 +801,7 @@ int hgio_fontsystem_exec(char* msg, unsigned char* buffer, int pitch, int* out_s
 			canvas.style.setProperty("position", "absolute");
 			canvas.style.setProperty("top", "0");
 			canvas.style.setProperty("left", "0");
+			canvas.style.setProperty("transform", "scale(0)");
 			document.body.appendChild(canvas);
 		}
 	});

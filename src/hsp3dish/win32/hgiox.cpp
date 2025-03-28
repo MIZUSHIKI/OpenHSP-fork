@@ -2137,6 +2137,12 @@ int hgio_mestex(BMSCR *bm, texmesPos *tpos)
 }
 
 
+void Posinc( BMSCR *bm, int pp )
+{
+	if ( pp<bm->py ) { bm->cy+=bm->py; } else { bm->cy+=pp; }
+}
+
+
 int hgio_mes(BMSCR* bm, char* msg)
 {
 	//		mes,print 文字表示
@@ -2151,7 +2157,8 @@ int hgio_mes(BMSCR* bm, char* msg)
 	if (*msg == 0) {
 		ysize = tmes._fontsize;
 		bm->printsizey += ysize;
-		bm->cy += ysize;
+		//bm->cy += ysize;
+		Posinc(bm, ysize);
 		return 0;
 	}
 
@@ -2185,7 +2192,8 @@ int hgio_mes(BMSCR* bm, char* msg)
 	//xsize = game->drawFont(bm->cx, bm->cy, str1, (gameplay::Vector4*)bm->colorvalue, &ysize);
 	if (xsize > bm->printsizex) bm->printsizex = xsize;
 	bm->printsizey += ysize;
-	bm->cy += ysize;
+	//bm->cy += ysize;
+	Posinc(bm, ysize);
 	return 0;
 }
 
