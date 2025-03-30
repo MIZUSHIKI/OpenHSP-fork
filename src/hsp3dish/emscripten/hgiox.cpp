@@ -2053,6 +2053,9 @@ int hgio_mes(BMSCR* bm, char* msg)
 	}
 	if (bm->printoffsety > 0) {			// センタリングを行う(Y)
 		int offset = (bm->printoffsety - ysize) / 2;
+#if FONT_PADDING == 1
+		offset += fontsize / 4;
+#endif
 		if (offset > 0) {
 			bm->cy += offset;
 		}
@@ -2136,7 +2139,11 @@ int hgio_mestex(BMSCR *bm, texmesPos *tpos)
 
 	xsize = tex->sx;
 	ysize = tex->sy;
+#if FONT_PADDING == 0
 	tpos->printysize = ysize;
+#else
+	tpos->printysize = ysize - tmes._fontsize / 2;
+#endif
 
 	x = orgx; y = orgy;
 	tx = 0; ty = 0;
@@ -2151,6 +2158,9 @@ int hgio_mestex(BMSCR *bm, texmesPos *tpos)
 	}
 	if (mode & TEXMES_MODE_CENTERY) {
 		int py = (sy - ysize) / 2;
+#if FONT_PADDING == 1
+		py += tmes._fontsize / 4;
+#endif
 		if (py < 0) { py = 0; }
 		y += py;
 	}
@@ -2166,7 +2176,11 @@ int hgio_mestex(BMSCR *bm, texmesPos *tpos)
 			ysize = esy - y;
 			if (ysize <= 0) return -1;
 		}
+#if FONT_PADDING == 0
 		hgio_fontcopy(bm, x, y, tex->ratex, tex->ratey, xsize, ysize, tex->_texture, tx, ty);
+#else
+		hgio_fontcopy(bm, x, y - tmes._fontsize / 2, tex->ratex, tex->ratey, xsize, ysize, tex->_texture, tx, ty);
+#endif
 	}
 
 	bm->cy += ysize;
