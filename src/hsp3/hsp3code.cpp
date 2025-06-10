@@ -1318,21 +1318,21 @@ void cmdfunc_return( void )
 	hspctx->runmode = RUNMODE_RUN;
 }
 
-#ifdef HSPEMSCRIPTEN
-static void cmdfunc_gosub( unsigned short *subr, unsigned short *retpc )
-{
-	//		gosub execute
-	//
-	HSPROUTINE r;
-	r.mcsret = retpc;
-	r.stacklev = hspctx->sublev++;
-	r.oldtack = hspctx->prmstack;
-	r.param = NULL;
-	StackPush( TYPE_EX_SUBROUTINE, (char *)&r, sizeof(HSPROUTINE) );
+// #ifdef HSPEMSCRIPTEN
+// static void cmdfunc_gosub( unsigned short *subr, unsigned short *retpc )
+// {
+// 	//		gosub execute
+// 	//
+// 	HSPROUTINE r;
+// 	r.mcsret = retpc;
+// 	r.stacklev = hspctx->sublev++;
+// 	r.oldtack = hspctx->prmstack;
+// 	r.param = NULL;
+// 	StackPush( TYPE_EX_SUBROUTINE, (char *)&r, sizeof(HSPROUTINE) );
 
-	code_setpc( subr );
-}
-#else
+// 	code_setpc( subr );
+// }
+// #else
 static int cmdfunc_gosub( unsigned short *subr )
 {
 	//		gosub execute
@@ -1371,7 +1371,7 @@ static int cmdfunc_gosub( unsigned short *subr )
 
 	return RUNMODE_RUN;
 }
-#endif
+// #endif
 
 
 static int code_callfunc( int cmd )
@@ -1993,20 +1993,20 @@ static int cmdfunc_prog( int cmd )
 		break;
 
 	case 0x01:								// gosub
-#ifdef HSPEMSCRIPTEN
-		{
-		unsigned short *sbr;
-		sbr = code_getlb();
-		cmdfunc_gosub( sbr, mcs );
-		break;
-		}
-#else
+// #ifdef HSPEMSCRIPTEN
+// 		{
+// 		unsigned short *sbr;
+// 		sbr = code_getlb();
+// 		cmdfunc_gosub( sbr, mcs );
+// 		break;
+// 		}
+// #else
 		{
 		unsigned short *sbr;
 		sbr = code_getlb();
 		return cmdfunc_gosub( sbr );
 		}
-#endif
+// #endif
 	case 0x02:								// return
 #ifdef HSPEMSCRIPTEN
 		if ( hspctx->prmstack != NULL ) cmdfunc_return_setval();
@@ -2623,11 +2623,11 @@ void code_call( const unsigned short *pc )
 	//		サブルーチンジャンプを行なう
 	//
 	mcs = mcsbak;
-#ifdef HSPEMSCRIPTEN
-	cmdfunc_gosub( (unsigned short *)pc, mcs );
-#else
+// #ifdef HSPEMSCRIPTEN
+// 	cmdfunc_gosub( (unsigned short *)pc, mcs );
+// #else
 	cmdfunc_gosub( (unsigned short *)pc );
-#endif
+// #endif
 	if ( hspctx->runmode == RUNMODE_END ) return;
 	hspctx->runmode = RUNMODE_RUN;
 }
@@ -2638,11 +2638,11 @@ void code_callback(const unsigned short *pc)
 	//
 	mcs = mcsbak;
 	hspctx->callback_flag = 1;
-#ifdef HSPEMSCRIPTEN
-	cmdfunc_gosub((unsigned short *)pc, mcs);
-#else
+// #ifdef HSPEMSCRIPTEN
+// 	cmdfunc_gosub((unsigned short *)pc, mcs);
+// #else
 	cmdfunc_gosub((unsigned short *)pc);
-#endif
+// #endif
 	hspctx->callback_flag = 0;
 	if (hspctx->runmode == RUNMODE_END) return;
 	hspctx->runmode = RUNMODE_RUN;
@@ -3557,15 +3557,15 @@ void code_execirq( IRQDAT *irq, int wparam, int lparam )
 	}
 	if ( irq->opt == IRQ_OPT_GOSUB ) {
 		mcs = mcsbak;
-#ifdef HSPEMSCRIPTEN
-		code_call( irq->ptr );
-#else
+// #ifdef HSPEMSCRIPTEN
+// 		code_call( irq->ptr );
+// #else
 		//code_callback( (unsigned short *)irq->ptr );
 		cmdfunc_gosub( (unsigned short *)irq->ptr );
 		if ( hspctx->runmode != RUNMODE_END ) {
 			hspctx->runmode = RUNMODE_RUN;
 		}
-#endif
+// #endif
 	}
 	//Alertf("sublev%d", hspctx->sublev );
 }
