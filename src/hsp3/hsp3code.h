@@ -21,6 +21,9 @@ void code_setpc( const unsigned short *pc );
 void code_setpci( const unsigned short *pc );
 void code_call(const unsigned short *pc);
 void code_callback(const unsigned short *pc);
+#ifdef HSPEMSCRIPTEN
+void code_callback_now(const unsigned short *pc);
+#endif
 void cmdfunc_return( void );
 unsigned short *code_getpcbak( void );
 

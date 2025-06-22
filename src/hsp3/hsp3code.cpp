@@ -1318,7 +1318,6 @@ void cmdfunc_return( void )
 	hspctx->runmode = RUNMODE_RUN;
 }
 
-#ifdef HSPEMSCRIPTEN
 static void cmdfunc_gosub( unsigned short *subr, unsigned short *retpc )
 {
 	//		gosub execute
@@ -1332,7 +1331,7 @@ static void cmdfunc_gosub( unsigned short *subr, unsigned short *retpc )
 
 	code_setpc( subr );
 }
-#else
+
 static int cmdfunc_gosub( unsigned short *subr )
 {
 	//		gosub execute
@@ -1371,8 +1370,6 @@ static int cmdfunc_gosub( unsigned short *subr )
 
 	return RUNMODE_RUN;
 }
-#endif
-
 
 static int code_callfunc( int cmd )
 {
@@ -2647,6 +2644,20 @@ void code_callback(const unsigned short *pc)
 	if (hspctx->runmode == RUNMODE_END) return;
 	hspctx->runmode = RUNMODE_RUN;
 }
+
+#ifdef HSPEMSCRIPTEN
+void code_callback_now(const unsigned short *pc)
+{
+	//		コールバックのサブルーチンジャンプを行なう(関数内で呼び出しを完結)
+	//
+	mcs = mcsbak;
+	hspctx->callback_flag = 1;
+	cmdfunc_gosub((unsigned short *)pc);
+	hspctx->callback_flag = 0;
+	if (hspctx->runmode == RUNMODE_END) return;
+	hspctx->runmode = RUNMODE_RUN;
+}
+#endif
 
 unsigned short *code_getpcbak( void )
 {

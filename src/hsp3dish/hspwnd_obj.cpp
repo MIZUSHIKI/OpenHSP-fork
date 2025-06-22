@@ -687,7 +687,11 @@ static void Object_LayerNotice(HSPOBJINFO *info, int wparam)
 	info->hspctx->iparam = info->exinfo2;
 	info->hspctx->wparam = info->owid;
 	info->hspctx->lparam = wparam;
+#ifdef HSPEMSCRIPTEN
+	code_callback_now((unsigned short *)info->hCld);
+#else
 	code_callback((unsigned short *)info->hCld);
+#endif
 	info->exinfo2++;
 }
 

@@ -447,9 +447,14 @@ static int cmdfunc_extcmd( int cmd )
 		ps = code_getds( "" );
 		hsp3ext_execfile(fname, ps, p1);
 
+#ifdef HSPEMSCRIPTEN
+        ctx->runmode = RUNMODE_RUN;
+        return RUNMODE_RUN;
+#else
         ctx->waitcount = 0;
         ctx->runmode = RUNMODE_WAIT;
         return RUNMODE_WAIT;
+#endif
 		}
 
 	case 0x03:								// dialog
